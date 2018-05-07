@@ -57,16 +57,16 @@ def main():
     service = discovery.build('drive', 'v2', http=http)
     name = service.about().get().execute()["name"]
     results = service.files().list(q="mimeType = 'application/vnd.google-apps.document'").execute()
-    items = results.get('items', [])
-    if not items:
+    docs = results.get('items', [])
+    if not docs:
         print('No files found.')
     else:
         entries = []
-        for item in items:
-            if item["capabilities"]["canEdit"]:
-                revisions = service.revisions().list(fileId=item["id"]).execute()
+        for doc in docs[:2]:
+            if doc["capabilities"]["canEdit"]:
+                revisions = service.revisions().list(fileId=doc["id"]).execute()
                 last_revision = ""
-                for revision in revisions["items"][:2]: 
+                for revision in revisions["items"]: 
                     with urllib.request.urlopen(revision["exportLinks"]["text/plain"]) as f:
                         revision_text = f.read()
                     if revision.get("lastModifyingUser", {}).get("displayName", "") == name:
@@ -79,9 +79,9 @@ def main():
                             # link, 
                             })
                             # you have to figure out how to fetch that URL with authentication
-                            # then in you have to figure out how compare it and isolate text that's in this entry but isn't in previous entrie
-    return service, items
+                            # then in you have to figure out how compare it and isolate text that's in this entry but isn't in previous entries
+    return service, docs, entries
                     
             
 if __name__ == '__main__':
-    service, items = main()
+    service, docs, entries = main()
