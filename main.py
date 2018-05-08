@@ -1,5 +1,5 @@
 from __future__ import print_function
-from pdb import pm
+from pdb import pm, set_trace
 import httplib2
 import urllib.request
 import os
@@ -67,8 +67,7 @@ def main():
                 revisions = service.revisions().list(fileId=doc["id"]).execute()
                 last_revision = ""
                 for revision in revisions["items"]: 
-                    with urllib.request.urlopen(revision["exportLinks"]["text/plain"]) as f:
-                        revision_text = f.read()
+                    response, revision_text = http.request(revision["exportLinks"]["text/plain"])
                     if revision.get("lastModifyingUser", {}).get("displayName", "") == name:
                         entries.append({
                             "content": revision_text, # except compare with last_revision and only use that
