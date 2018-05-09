@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
 from __future__ import print_function
 from pdb import pm, set_trace
-import httplib2
-import urllib.request
+from pprint import pprint as pp
+from difflib import Differ
 import os
-
+import httplib2
 
 from apiclient import discovery
 from oauth2client import client
@@ -65,22 +66,23 @@ def main():
         for doc in docs[:2]:
             if doc["capabilities"]["canEdit"]:
                 revisions = service.revisions().list(fileId=doc["id"]).execute()
-                last_revision = ""
-                for revision in revisions["items"]: 
-                    response, revision_text = http.request(revision["exportLinks"]["text/plain"])
+                last_revision = []
+                for revision in revisions["items"]:
+                    revision = http.request(revision["exportLinks"]["text/plain"])[0].decode("utf-8-sig").splitlines()
                     if revision.get("lastModifyingUser", {}).get("displayName", "") == name:
                         entries.append({
-                            "content": revision_text, # except compare with last_revision and only use that
-                            "source": "drive",
-                            "account": name,
+                            "content": "\n".join([line[2:] for line in
+                                Differ().compare(last_revision, revision)
+                                if line[:2] == "+ "]),
+                            "timestamp": revision["modifiedDate"], # strftime?
+                            "title": doc["title"],
+                            "link": "https://docs.google.com/document/d/" + doc["id"],
                             "kind": "writing",
-                            "timestamp": revision["modifiedDate"] # probably parse into an actual time object
-                            # link, 
+                            "source": "drive",
+                            "account": name
                             })
-                            # you have to figure out how to fetch that URL with authentication
-                            # then in you have to figure out how compare it and isolate text that's in this entry but isn't in previous entries
-    return service, docs, entries
-                    
-            
+                    last_revision = revision
+    return entries
+
 if __name__ == '__main__':
-    service, docs, entries = main()
+    entries = main()
