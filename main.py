@@ -68,11 +68,11 @@ def main():
                 revisions = service.revisions().list(fileId=doc["id"]).execute()
                 last_revision = []
                 for revision in revisions["items"]:
-                    revision = http.request(revision["exportLinks"]["text/plain"])[0].decode("utf-8-sig").splitlines()
+                    revision_text = http.request(revision["exportLinks"]["text/plain"])[1].decode("utf-8-sig").splitlines()
                     if revision.get("lastModifyingUser", {}).get("displayName", "") == name:
                         entries.append({
                             "content": "\n".join([line[2:] for line in
-                                Differ().compare(last_revision, revision)
+                                Differ().compare(last_revision, revision_text)
                                 if line[:2] == "+ "]),
                             "timestamp": revision["modifiedDate"], # strftime?
                             "title": doc["title"],
@@ -81,7 +81,7 @@ def main():
                             "source": "drive",
                             "account": name
                             })
-                    last_revision = revision
+                    last_revision = revision_text
     return entries
 
 if __name__ == '__main__':
